@@ -10,7 +10,10 @@ import Foundation
 struct MemoryGame<CardContent> where CardContent: Equatable {
     private(set) var cards: [Card]
     
-    private var indexOfTheOneAndOnlyFacedUpCard: Int?
+    private var indexOfTheOneAndOnlyFacedUpCard: Int? {
+        get { cards.indices.filter{cards[$0].isFacedUp}.oneAndOnly }
+        set { cards.indices.forEach{cards[$0].isFacedUp = ($0 == newValue)} }
+    }
     
     init(numberOfPairsOfCards: Int, createCardContent: (Int) -> CardContent) {
         cards = []
@@ -20,32 +23,46 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
             cards.append(Card(id: pairIndex * 2, content: content))
             cards.append(Card(id: pairIndex * 2 + 1,content: content))
         }
+        
+        cards.shuffle()
     }
     
     mutating func choose(_ card: Card) {
         if let choosenIndex = cards.firstIndex(where: {$0.id == card.id }) ,!cards[choosenIndex].isFacedUp
             ,!cards[choosenIndex].isMatched {
+          
             if let potentialIndex = indexOfTheOneAndOnlyFacedUpCard {
                 if cards[potentialIndex].content == cards[choosenIndex].content {
                     cards[choosenIndex].isMatched = true
                     cards[potentialIndex].isMatched = true
                 }
-                indexOfTheOneAndOnlyFacedUpCard = nil
+                cards[choosenIndex].isFacedUp = true
+               
             } else {
-                for index in cards.indices {
-                    cards[index].isFacedUp = false
-                }
                 indexOfTheOneAndOnlyFacedUpCard = choosenIndex
             }
-            cards[choosenIndex].isFacedUp.toggle()
         }
+    }
+    
+    mutating func shuffle() {
+        cards.shuffle()
     }
     
 
     struct Card: Identifiable {
-        var id: Int
+        let id: Int
         var isFacedUp = false
         var isMatched = false
-        var content: CardContent
+        let content: CardContent
+    }
+}
+
+extension Array {
+    var oneAndOnly: Element? {
+        if count == 1 {
+            return first
+        } else {
+            return nil
+        }
     }
 }
